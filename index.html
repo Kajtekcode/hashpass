@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hash Pass Demo</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .logo {
+      width: 80px;
+      height: 80px;
+      background: #ffffff;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 42px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #aaaaaa;
+      margin-bottom: 50px;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 18px;
+      margin: 12px 0;
+      border: none;
+      border-radius: 16px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: #f59e0b;
+      color: #000;
+    }
+    .btn-secondary {
+      background: #1f1f1f;
+      color: #fff;
+    }
+    .qr-container {
+      background: #1a1a1a;
+      padding: 30px;
+      border-radius: 20px;
+      margin: 40px auto;
+      display: none;
+    }
+    .status {
+      margin-top: 20px;
+      font-size: 15px;
+      color: #aaaaaa;
+    }
+    .success { color: #22c55e; font-weight: 600; }
+    .error { color: #ef4444; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">🔑</div>
+    <h1>Hash Pass Demo</h1>
+    <p class="subtitle">Real Bitcoin cryptography authentication</p>
+
+    <button class="btn btn-primary" onclick="register()">Register New Account</button>
+    <button class="btn btn-secondary" onclick="startLogin()">Login with Hash Pass</button>
+
+    <div id="qrContainer" class="qr-container">
+      <div id="qrcode"></div>
+      <p class="status">Scan this QR code with Hash Pass app</p>
+    </div>
+
+    <div id="waitingScreen" style="display: none;">
+      <p class="status">Waiting for signature from Hash Pass app...</p>
+    </div>
+
+    <div id="successScreen" style="display: none;">
+      <div style="font-size: 70px; margin: 40px 0;">🎉</div>
+      <h2 class="success">Login Successful!</h2>
+      <p>You have been authenticated using real Bitcoin cryptography.</p>
+      <button class="btn btn-primary" onclick="resetDemo()">Try Again</button>
+    </div>
+
+    <div id="errorScreen" style="display: none;">
+      <div style="font-size: 70px; margin: 40px 0;">❌</div>
+      <h2 class="error">Verification Failed</h2>
+      <p>Invalid signature or wrong public key.</p>
+      <button class="btn btn-primary" onclick="resetDemo()">Try Again</button>
+    </div>
+  </div>
+
+  <script>
+    let currentChallenge = "";
+    let savedPublicKey = null;
+
+    // Demo public key (you can change this)
+    const DEMO_PUBLIC_KEY = "02f5a6e5c8d9b0a1f2e3d4c5b6a7f8e9d0c1b2a3f4e5d6c7b8a9f0e1d2c3b4a5";
+
+    function register() {
+      savedPublicKey = DEMO_PUBLIC_KEY;
+      alert("✅ Account registered successfully!\n\nYour public key has been saved on this demo website.\n\nYou can now log in with Hash Pass.");
+    }
+
+    function startLogin() {
+      if (!savedPublicKey) {
+        alert("Please register an account first!");
+        return;
+      }
+
+      currentChallenge = "challenge-" + Date.now();
+
+      const payload = {
+        site: "demo.hashpass.app",
+        challenge: currentChallenge
+      };
+
+      const qrData = JSON.stringify(payload);
+
+      document.getElementById('qrContainer').style.display = 'block';
+      document.getElementById('waitingScreen').style.display = 'none';
+      document.getElementById('successScreen').style.display = 'none';
+      document.getElementById('errorScreen').style.display = 'none';
+
+      // Generate real QR code
+      document.getElementById('qrcode').innerHTML = '';
+      new QRCode(document.getElementById('qrcode'), {
+        text: qrData,
+        width: 260,
+        height: 260,
+        colorDark: "#ffffff",
+        colorLight: "#1a1a1a",
+      });
+    }
+
+    function resetDemo() {
+      document.getElementById('qrContainer').style.display = 'none';
+      document.getElementById('waitingScreen').style.display = 'none';
+      document.getElementById('successScreen').style.display = 'none';
+      document.getElementById('errorScreen').style.display = 'none';
+    }
+
+    console.log("%cHash Pass Demo ready.\n1. Click Register New Account\n2. Click Login with Hash Pass\n3. Scan with your app", 
+      "color: #f59e0b; font-size: 14px");
+  </script>
+</body>
+</html>

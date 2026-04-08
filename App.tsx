@@ -13,19 +13,20 @@ import BiometricsSetupScreen from './src/screens/BiometricsSetupScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import QRScannerScreen from './src/screens/QRScannerScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import ActivityScreen from './src/screens/ActivityScreen';
+
+// Import sessionService
+import { sessionService } from './src/services/bitcoinService';
 
 export default function App() {
   const [screen, setScreen] = useState<
     'welcome' | 'educational' | 'seedPhrase' | 'pinSetup' | 
-    'setupLoading' | 'biometricsSetup' | 'home' | 'qrScanner' | 'settings'
+    'setupLoading' | 'biometricsSetup' | 'home' | 'qrScanner' | 'settings' | 'activity'
   >('welcome');
 
   const [seedPhrase, setSeedPhrase] = useState<string>('');
-  const [currentPin, setCurrentPin] = useState<string>(''); // Only used briefly for loading screen
 
-  // Navigation handlers
   const handleGetStarted = () => setScreen('educational');
-
   const handleContinueToSeed = () => setScreen('seedPhrase');
 
   const handleSeedContinue = (generatedSeed: string) => {
@@ -33,29 +34,31 @@ export default function App() {
     setScreen('pinSetup');
   };
 
+  const [currentPin, setCurrentPin] = useState<string>('');   // Add this state near the top with other states
+
   const handlePINComplete = (pin: string) => {
     setCurrentPin(pin);
     setScreen('setupLoading');
   };
 
   const handleLoadingComplete = () => {
-    setCurrentPin(''); // Clear PIN after use
+    setCurrentPin(''); // clear after use
     setScreen('biometricsSetup');
   };
 
   const handleBiometricsComplete = () => setScreen('home');
-
   const handleBiometricsSkip = () => setScreen('home');
 
   const handleBack = () => setScreen('educational');
-
   const goToHome = () => setScreen('home');
-
   const goToQRScanner = () => setScreen('qrScanner');
-
   const goToSettings = () => setScreen('settings');
+  const goToActivity = () => setScreen('activity');
 
-  const handleQRScanComplete = (site: string = 'unknown-site') => {
+  const handleQRScanComplete = async (site: string = 'unknown-site') => {
+    // Add to persistent recent activity
+    await sessionService.addSession(site, 'demo-challenge');
+    
     Alert.alert('✅ Success', `You are now logged into ${site}`);
     setScreen('home');
   };
@@ -70,15 +73,10 @@ export default function App() {
     <>
       {screen === 'welcome' && <WelcomeScreen onGetStarted={handleGetStarted} />}
       
-      {screen === 'educational' && (
-        <EducationalScreen onContinue={handleContinueToSeed} />
-      )}
+      {screen === 'educational' && <EducationalScreen onContinue={handleContinueToSeed} />}
 
       {screen === 'seedPhrase' && (
-        <SeedPhraseScreen
-          onBack={handleBack}
-          onContinue={handleSeedContinue}
-        />
+        <SeedPhraseScreen onBack={handleBack} onContinue={handleSeedContinue} />
       )}
 
       {screen === 'pinSetup' && (
@@ -108,6 +106,7 @@ export default function App() {
         <HomeScreen 
           onScanQR={goToQRScanner}
           onSettings={goToSettings}
+          onActivity={goToActivity}
         />
       )}
 
@@ -120,6 +119,8 @@ export default function App() {
       )}
 
       {screen === 'settings' && <SettingsScreen onBack={goToHome} />}
+
+      {screen === 'activity' && <ActivityScreen onBack={goToHome} />}
     </>
   );
 }

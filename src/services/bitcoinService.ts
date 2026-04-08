@@ -11,19 +11,12 @@ const bip32 = BIP32Factory(ecc);
 
 const MNEMONIC_KEY = 'hashpass_encrypted_mnemonic';
 
-export interface DerivedKeys {
-  privateKey: string;
-  publicKey: string;
-  address: string;
-  path: string;
-}
-
 // Helper to derive encryption key from PIN
 async function deriveKeyFromPIN(pin: string): Promise<Buffer> {
   const salt = 'hashpass-salt-v1';
   let key = pin + salt;
 
-  // Strong key stretching with 100,000 iterations
+  // Strong key stretching
   for (let i = 0; i < 100000; i++) {
     key = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
@@ -32,6 +25,13 @@ async function deriveKeyFromPIN(pin: string): Promise<Buffer> {
   }
 
   return Buffer.from(key, 'hex');
+}
+
+export interface DerivedKeys {
+  privateKey: string;
+  publicKey: string;
+  address: string;
+  path: string;
 }
 
 export const bitcoinService = {
@@ -148,25 +148,45 @@ export const bitcoinService = {
   },
 };
 
-// Session Management
-interface Session {
-  site: string;
-  timestamp: Date;
-  challenge: string;
-}
-
-let activeSessions: Session[] = [];
+// Persistent Recent Activity
+const SESSIONS_KEY = 'hashpass_recent_sessions';
 
 export const sessionService = {
-  addSession(site: string, challenge: string) {
-    activeSessions.unshift({ site, timestamp: new Date(), challenge });
-    if (activeSessions.length > 5) activeSessions.pop();
+  async addSession(site: string, challenge: string) {
+    try {
+      const sessions = await this.getSessions();
+      
+      const newSession = { 
+        site, 
+        timestamp: new Date().toISOString(), 
+        challenge 
+      };
+
+      sessions.unshift(newSession); // newest first
+      if (sessions.length > 10) sessions.pop(); // keep only last 10
+
+      await SecureStore.setItemAsync(SESSIONS_KEY, JSON.stringify(sessions));
+    } catch (error) {
+      console.error('Failed to save session:', error);
+    }
   },
-  getSessions(): Session[] {
-    return [...activeSessions];
+
+  async getSessions() {
+    try {
+      const data = await SecureStore.getItemAsync(SESSIONS_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      console.error('Failed to load sessions:', error);
+      return [];
+    }
   },
-  clearSessions() {
-    activeSessions = [];
+
+  async clearSessions() {
+    try {
+      await SecureStore.deleteItemAsync(SESSIONS_KEY);
+    } catch (error) {
+      console.error('Failed to clear sessions:', error);
+    }
   },
 };
 
@@ -187,7 +207,7 @@ export const settingsService = {
       const value = await SecureStore.getItemAsync(BIOMETRICS_ENABLED_KEY);
       return value === 'true';
     } catch (error) {
-      return true;
+      return true; // default to true
     }
   },
 };

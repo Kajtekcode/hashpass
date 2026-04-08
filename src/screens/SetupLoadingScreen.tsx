@@ -17,13 +17,14 @@ interface SetupLoadingScreenProps {
 
 export default function SetupLoadingScreen({ seedPhrase, pin, onComplete }: SetupLoadingScreenProps) {
   const [progress, setProgress] = useState(0);
+  const [stage, setStage] = useState<'loading' | 'success'>('loading');
 
   useEffect(() => {
     let isMounted = true;
 
     const startSetup = async () => {
       try {
-        // Encrypt during the loading animation
+        // Encrypt during the loading phase
         await bitcoinService.saveEncryptedMnemonic(seedPhrase, pin);
         console.log('✅ Seed phrase encrypted and saved during loading');
       } catch (error) {
@@ -39,13 +40,16 @@ export default function SetupLoadingScreen({ seedPhrase, pin, onComplete }: Setu
           if (prev >= 100) {
             clearInterval(interval);
             if (isMounted) {
-              setTimeout(onComplete, 600);
+              setStage('success');           // Show success message
+              setTimeout(() => {
+                if (isMounted) onComplete();
+              }, 1900); // Show success for 1.2 seconds
             }
             return 100;
           }
-          return prev + 4;
+          return prev + 3.5;
         });
-      }, 35);
+      }, 40);
     };
 
     startSetup();
@@ -58,20 +62,36 @@ export default function SetupLoadingScreen({ seedPhrase, pin, onComplete }: Setu
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <View style={styles.iconContainer}>
-          <Text style={styles.keyIcon}>🔑</Text>
-        </View>
+        {stage === 'loading' ? (
+          <>
+            <View style={styles.iconContainer}>
+              <Text style={styles.keyIcon}>🔑</Text>
+            </View>
 
-        <Text style={styles.title}>Setting up</Text>
-        <Text style={styles.subtitle}>Creating your secure keychain</Text>
+            <Text style={styles.title}>Setting up</Text>
+            <Text style={styles.subtitle}>Creating your secure keychain</Text>
 
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBarBackground}>
-            <View style={[styles.progressBar, { width: `${progress}%` }]} />
-          </View>
-        </View>
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBarBackground}>
+                <View style={[styles.progressBar, { width: `${progress}%` }]} />
+              </View>
+            </View>
 
-        <ActivityIndicator size="small" color="#666666" style={styles.spinner} />
+            <ActivityIndicator size="small" color="#666666" style={styles.spinner} />
+          </>
+        ) : (
+          // Success Stage
+          <>
+            <View style={styles.successIconContainer}>
+              <Text style={styles.successIcon}>🎉</Text>
+            </View>
+
+            <Text style={styles.successTitle}>You're all set up!</Text>
+            <Text style={styles.successSubtitle}>
+              Your Bitcoin-powered keychain is now ready.
+            </Text>
+          </>
+        )}
       </View>
     </View>
   );
@@ -131,5 +151,34 @@ const styles = StyleSheet.create({
   },
   spinner: {
     marginTop: 20,
+  },
+
+  // Success styles
+  successIconContainer: {
+    width: 96,
+    height: 96,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 32,
+    borderWidth: 3,
+    borderColor: '#f59e0b',
+  },
+  successIcon: {
+    fontSize: 48,
+  },
+  successTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  successSubtitle: {
+    fontSize: 16,
+    color: '#aaaaaa',
+    textAlign: 'center',
+    lineHeight: 24,
   },
 });

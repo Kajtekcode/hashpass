@@ -1,263 +1,140 @@
 // src/screens/HomeScreen.tsx
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   Pressable, 
-  TouchableOpacity, 
-  Alert 
+  ScrollView, 
+  SafeAreaView 
 } from 'react-native';
-import * as LocalAuthentication from 'expo-local-authentication';
-import { sessionService, settingsService } from '../services/bitcoinService';
+import { sessionService } from '../services/bitcoinService';
 
 interface HomeScreenProps {
   onScanQR: () => void;
-  onSettings: () => void;        // To open Settings screen
+  onSettings: () => void;
+  onActivity: () => void;        // New prop for "See all"
 }
 
-export default function HomeScreen({ onScanQR, onSettings }: HomeScreenProps) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [sessions, setSessions] = useState(sessionService.getSessions());
-  const [biometricsEnabled, setBiometricsEnabled] = useState(true);
+export default function HomeScreen({ onScanQR, onSettings, onActivity }: HomeScreenProps) {
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
-  const refreshSessions = useCallback(() => {
-    setSessions(sessionService.getSessions());
+  useEffect(() => {
+    loadRecentSessions();
   }, []);
 
-  // Load biometrics preference
-  useEffect(() => {
-    const loadSettings = async () => {
-      const enabled = await settingsService.getBiometricsEnabled();
-      setBiometricsEnabled(enabled);
-    };
-    loadSettings();
-  }, []);
-
-  // Auto-unlock only if biometrics are enabled
-  useEffect(() => {
-    if (biometricsEnabled) {
-      const timer = setTimeout(() => authenticateUser(), 800);
-      return () => clearTimeout(timer);
-    }
-  }, [biometricsEnabled]);
-
-  const authenticateUser = async () => {
-    try {
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Unlock Hash Pass',
-      });
-      if (result.success) {
-        setIsAuthenticated(true);
-        refreshSessions();
-      }
-    } catch (error) {
-      console.log('Biometric unlock skipped or failed');
-    }
+  const loadRecentSessions = async () => {
+    const sessions = await sessionService.getSessions();
+    setRecentActivity(sessions);
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.shieldIcon}>
-            <Text style={styles.shieldText}>🛡️</Text>
-          </View>
-          <Text style={styles.logo}>HASH PASS</Text>
-        </View>
-        
-        {/* Settings Button */}
-        <TouchableOpacity onPress={onSettings}>
-          <Text style={styles.gear}>⚙️</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Active Public Key */}
-      <View style={styles.publicKeyCard}>
-        <Text style={styles.publicKeyLabel}>ACTIVE PUBLIC KEY</Text>
-        <View style={styles.keyRow}>
-          <Text style={styles.publicKey}>bc1qxy2k...yrf249</Text>
-          <TouchableOpacity onPress={() => Alert.alert('Copied', 'Public key copied')}>
-            <Text style={styles.copyIcon}>⎘</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* SCAN QR CODE Button */}
-      <Pressable style={styles.scanButton} onPress={onScanQR}>
-        <Text style={styles.scanIcon}>📱</Text>
-        <Text style={styles.scanText}>SCAN QR CODE</Text>
-      </Pressable>
-
-      <TouchableOpacity style={styles.howItWorks}>
-        <Text style={styles.howItWorksText}>ⓘ How cryptographic login works</Text>
-      </TouchableOpacity>
-
-      {/* Recent Sessions */}
-      <View style={styles.recentSection}>
-        <View style={styles.recentHeader}>
-          <Text style={styles.recentTitle}>RECENT SESSIONS</Text>
-          <TouchableOpacity onPress={refreshSessions}>
-            <Text style={styles.manageText}>REFRESH</Text>
-          </TouchableOpacity>
-        </View>
-
-        {sessions.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>
-              No active sessions yet.{'\n'}
-              Scan a QR code to start logging in.
-            </Text>
-          </View>
-        ) : (
-          sessions.map((session, index) => (
-            <View key={index} style={styles.sessionCard}>
-              <View style={styles.sessionRow}>
-                <Text style={styles.sessionIcon}>🌐</Text>
-                <View style={styles.sessionInfo}>
-                  <Text style={styles.sessionSite}>{session.site}</Text>
-                  <Text style={styles.sessionStatus}>
-                    {session.timestamp.toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </Text>
-                </View>
-                <Text style={styles.chevron}>›</Text>
-              </View>
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.logoContainer}>
+            <View style={styles.logo}>
+              <Text style={styles.logoIcon}>🔑</Text>
             </View>
-          ))
-        )}
-      </View>
+            <View>
+              <Text style={styles.appName}>Hash Pass</Text>
+              <Text style={styles.appSubtitle}>Your secure keychain</Text>
+            </View>
+          </View>
 
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <View style={styles.navItem}>
-          <Text style={[styles.navIcon, styles.activeNav]}>◉</Text>
-          <Text style={[styles.navLabel, styles.activeNav]}>Home</Text>
+          <Pressable style={styles.settingsButton} onPress={onSettings}>
+            <Text style={styles.settingsIcon}>⚙️</Text>
+          </Pressable>
         </View>
-        <View style={styles.navItem}>
-          <Text style={styles.navIcon}>🕒</Text>
-          <Text style={styles.navLabel}>History</Text>
+
+        {/* Stats Cards */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>TOTAL LOGINS</Text>
+            <Text style={styles.statValue}>47</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>THIS WEEK</Text>
+            <Text style={styles.statValue}>12</Text>
+          </View>
         </View>
-        <View style={styles.navItem}>
-          <Text style={styles.navIcon}>🛡️</Text>
-          <Text style={styles.navLabel}>Security</Text>
+
+        {/* Scan Card */}
+        <Pressable style={styles.scanCard} onPress={onScanQR}>
+          <View style={styles.scanIconContainer}>
+            <Text style={styles.scanIcon}>📷</Text>
+          </View>
+          <Text style={styles.scanTitle}>Scan to login</Text>
+          <Text style={styles.scanSubtitle}>Point camera at QR code</Text>
+        </Pressable>
+
+        {/* Recent Activity */}
+        <View style={styles.recentSection}>
+          <View style={styles.recentHeader}>
+            <Text style={styles.recentTitle}>RECENT ACTIVITY</Text>
+            <Pressable onPress={onActivity}>
+              <Text style={styles.seeAll}>See all →</Text>
+            </Pressable>
+          </View>
+
+          {recentActivity.length > 0 ? recentActivity.map((item, index) => (
+            <View key={index} style={styles.activityCard}>
+              <View style={styles.activityIcon}>
+                <Text style={styles.activityEmoji}>🔶</Text>
+              </View>
+              <View style={styles.activityInfo}>
+                <Text style={styles.activityName}>{item.site}</Text>
+                <Text style={styles.activityDomain}>{item.site}</Text>
+              </View>
+              <Text style={styles.activityTime}>
+                {new Date(item.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+              </Text>
+            </View>
+          )) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No recent activity yet</Text>
+              <Text style={styles.emptySubtext}>Scan a QR code to get started</Text>
+            </View>
+          )}
         </View>
-      </View>
-    </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0a' },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 55,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1f1f1f',
-  },
-  headerLeft: { flexDirection: 'row', alignItems: 'center' },
-  shieldIcon: {
-    width: 34,
-    height: 34,
-    backgroundColor: '#f59e0b',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  shieldText: { fontSize: 20, color: '#000' },
-  logo: { fontSize: 23, fontWeight: '700', color: '#fff' },
-  gear: { fontSize: 26, color: '#888' },
-
-  publicKeyCard: {
-    backgroundColor: '#161616',
-    marginHorizontal: 20,
-    marginTop: 24,
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#2a2a2a',
-  },
-  publicKeyLabel: { fontSize: 13, color: '#888', marginBottom: 6 },
-  keyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  publicKey: { fontSize: 15, color: '#ddd', fontFamily: 'monospace' },
-  copyIcon: { fontSize: 20, color: '#f59e0b' },
-
-  scanButton: {
-    backgroundColor: '#f59e0b',
-    marginHorizontal: 20,
-    marginTop: 32,
-    paddingVertical: 17,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  scanIcon: { fontSize: 22 },
-  scanText: { color: '#000', fontSize: 17.5, fontWeight: '700' },
-
-  howItWorks: { marginTop: 20, alignItems: 'center' },
-  howItWorksText: { color: '#888', fontSize: 15 },
-
-  recentSection: { marginHorizontal: 20, marginTop: 36 },
-  recentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  recentTitle: { fontSize: 15, fontWeight: '600', color: '#fff' },
-  manageText: { color: '#f59e0b', fontSize: 14, fontWeight: '600' },
-
-  sessionCard: {
-    backgroundColor: '#161616',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 10,
-  },
-  sessionRow: { flexDirection: 'row', alignItems: 'center' },
-  sessionIcon: { fontSize: 26, marginRight: 14 },
-  sessionInfo: { flex: 1 },
-  sessionSite: { fontSize: 16.5, color: '#fff', fontWeight: '600' },
-  sessionStatus: { fontSize: 13, color: '#888', marginTop: 4 },
-  chevron: { fontSize: 22, color: '#666' },
-
-  emptyState: {
-    backgroundColor: '#161616',
-    padding: 24,
-    borderRadius: 14,
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-
-  bottomNav: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 78,
-    backgroundColor: '#111',
-    borderTopWidth: 1,
-    borderTopColor: '#222',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
-  navItem: { alignItems: 'center' },
-  navIcon: { fontSize: 24, marginBottom: 4, color: '#666' },
-  navLabel: { fontSize: 11, color: '#666' },
-  activeNav: { color: '#f59e0b' },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 },
+  logoContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  logo: { width: 48, height: 48, backgroundColor: '#ffffff', borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  logoIcon: { fontSize: 26 },
+  appName: { fontSize: 20, fontWeight: '700', color: '#ffffff' },
+  appSubtitle: { fontSize: 13, color: '#888888' },
+  settingsButton: { width: 44, height: 44, backgroundColor: '#1f1f1f', borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  settingsIcon: { fontSize: 22 },
+  statsContainer: { flexDirection: 'row', gap: 12, marginBottom: 32 },
+  statCard: { flex: 1, backgroundColor: '#161616', borderRadius: 16, padding: 18, borderWidth: 1, borderColor: '#242424' },
+  statLabel: { fontSize: 12, color: '#888888', marginBottom: 6 },
+  statValue: { fontSize: 28, fontWeight: '700', color: '#ffffff' },
+  scanCard: { backgroundColor: '#1a1a1a', borderRadius: 20, paddingVertical: 48, alignItems: 'center', marginBottom: 40, borderWidth: 1, borderColor: '#2a2a2a' },
+  scanIconContainer: { width: 72, height: 72, backgroundColor: '#2a2a2a', borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  scanIcon: { fontSize: 36 },
+  scanTitle: { fontSize: 20, fontWeight: '700', color: '#ffffff', marginBottom: 6 },
+  scanSubtitle: { fontSize: 15, color: '#aaaaaa' },
+  recentSection: { marginTop: 10 },
+  recentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  recentTitle: { fontSize: 13, fontWeight: '600', color: '#888888', letterSpacing: 0.5 },
+  seeAll: { fontSize: 13, color: '#f59e0b' },
+  activityCard: { flexDirection: 'row', backgroundColor: '#161616', borderRadius: 16, padding: 16, alignItems: 'center', marginBottom: 10 },
+  activityIcon: { width: 48, height: 48, backgroundColor: '#222222', borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  activityEmoji: { fontSize: 24 },
+  activityInfo: { flex: 1 },
+  activityName: { fontSize: 16, fontWeight: '600', color: '#ffffff' },
+  activityDomain: { fontSize: 13, color: '#aaaaaa' },
+  activityTime: { fontSize: 13, color: '#666666' },
+  emptyState: { alignItems: 'center', paddingVertical: 40 },
+  emptyText: { color: '#888888', fontSize: 16, marginBottom: 4 },
+  emptySubtext: { color: '#666666', fontSize: 14 },
 });

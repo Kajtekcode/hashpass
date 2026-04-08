@@ -5,17 +5,19 @@ import {
   Text, 
   StyleSheet, 
   Pressable, 
-  ActivityIndicator, 
-  TextInput,
-  Alert
+  Alert, 
+  ActivityIndicator,
+  TextInput 
 } from 'react-native';
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { bitcoinService } from '../services/bitcoinService';
+import { settingsService } from '../services/bitcoinService';
 
 interface QRScannerScreenProps {
   onClose: () => void;
   onScanSuccess: (site: string) => void;
-  onInvalidQR: () => void;   // Will be called from HomeScreen
+  onInvalidQR: () => void;
 }
 
 export default function QRScannerScreen({ onClose, onScanSuccess, onInvalidQR }: QRScannerScreenProps) {
@@ -38,39 +40,58 @@ export default function QRScannerScreen({ onClose, onScanSuccess, onInvalidQR }:
 
     try {
       const parsed = JSON.parse(data);
-      if (!parsed.site || !parsed.challenge) {
-        throw new Error('Invalid format');
-      }
+      if (!parsed.site || !parsed.challenge) throw new Error('Invalid');
       setScannedData(parsed);
     } catch {
-      onInvalidQR();   // Tell HomeScreen to show alert
-      onClose();       // Immediately close scanner
+      onInvalidQR();
+      onClose();
     }
   };
 
-  const handleConfirmLogin = () => {
+  const tryBiometrics = async () => {
     if (!scannedData) return;
-    setShowPinInput(true);
+
+    const isBiometricsEnabled = await settingsService.getBiometricsEnabled();
+
+    if (!isBiometricsEnabled) {
+      setShowPinInput(true);
+      return;
+    }
+
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: `Confirm login to ${scannedData.site}`,
+        fallbackLabel: 'Use PIN',
+      });
+
+      if (result.success) {
+        // For now we still need PIN for decryption in our current implementation
+        setShowPinInput(true);
+      } else {
+        setShowPinInput(true);
+      }
+    } catch (error) {
+      setShowPinInput(true);
+    }
   };
 
   const handlePinSubmit = async () => {
-    if (pin.length !== 6) {
+    if (pin.length !== 6 || !scannedData) {
       Alert.alert('Invalid PIN', 'Please enter your 6-digit PIN.');
       return;
     }
-    if (!scannedData) return;
 
     setIsProcessing(true);
 
     try {
       await bitcoinService.simulateBIP322Sign(scannedData.site, scannedData.challenge, pin);
       onScanSuccess(scannedData.site);
+      onClose();
     } catch (error) {
       Alert.alert('Authentication Failed', 'Invalid PIN or signing error.');
       setPin('');
     } finally {
       setIsProcessing(false);
-      onClose();
     }
   };
 
@@ -90,6 +111,7 @@ export default function QRScannerScreen({ onClose, onScanSuccess, onInvalidQR }:
   return (
     <View style={styles.container}>
       {!scannedData ? (
+        // Scanning View
         <>
           <CameraView
             style={StyleSheet.absoluteFill}
@@ -106,8 +128,8 @@ export default function QRScannerScreen({ onClose, onScanSuccess, onInvalidQR }:
               <View style={[styles.corner, styles.bottomRight]} />
             </View>
 
-            <Text style={styles.instruction}>Position QR code within the frame</Text>
-            <Text style={styles.scanningText}>SCANNING FOR QR CODE...</Text>
+            <Text style={styles.instruction}>Scan to login</Text>
+            <Text style={styles.subtitle}>Point camera at QR code</Text>
 
             <Pressable style={styles.cancelButton} onPress={handleClose}>
               <Text style={styles.cancelText}>CANCEL</Text>
@@ -115,6 +137,7 @@ export default function QRScannerScreen({ onClose, onScanSuccess, onInvalidQR }:
           </View>
         </>
       ) : showPinInput ? (
+        // PIN Input
         <View style={styles.pinContainer}>
           <Text style={styles.pinTitle}>Enter Your PIN</Text>
           <Text style={styles.pinSubtitle}>to confirm login to {scannedData.site}</Text>
@@ -143,19 +166,24 @@ export default function QRScannerScreen({ onClose, onScanSuccess, onInvalidQR }:
           </Pressable>
         </View>
       ) : (
+        // Confirmation Screen
         <View style={styles.confirmContainer}>
-          <Text style={styles.confirmTitle}>Login Request</Text>
-          <Text style={styles.siteName}>{scannedData.site}</Text>
+          <View style={styles.siteIcon}>
+            <Text style={styles.siteEmoji}>🔶</Text>
+          </View>
 
-          <Pressable 
-            style={styles.confirmButton} 
-            onPress={handleConfirmLogin}
-          >
-            <Text style={styles.confirmButtonText}>ENTER PIN TO LOGIN</Text>
+          <Text style={styles.siteName}>{scannedData.site}</Text>
+          <Text style={styles.authText}>wants to authenticate you</Text>
+
+          <Pressable style={styles.biometricsButton} onPress={tryBiometrics}>
+            <View style={styles.fingerprintContainer}>
+              <Text style={styles.fingerprintIcon}>👆</Text>
+            </View>
+            <Text style={styles.biometricsText}>Confirm with biometrics</Text>
           </Pressable>
 
           <Pressable style={styles.cancelTextButton} onPress={handleClose}>
-            <Text style={styles.cancelSmallText}>CANCEL REQUEST</Text>
+            <Text style={styles.cancelSmallText}>Cancel</Text>
           </Pressable>
         </View>
       )}
@@ -165,21 +193,49 @@ export default function QRScannerScreen({ onClose, onScanSuccess, onInvalidQR }:
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0a' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0a', padding: 40 },
-  text: { color: '#fff', fontSize: 18 },
-  button: { marginTop: 30, paddingVertical: 16, paddingHorizontal: 40, backgroundColor: '#f59e0b', borderRadius: 12 },
-  buttonText: { color: '#000', fontWeight: '700', fontSize: 16 },
 
-  overlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center' },
+  center: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    backgroundColor: '#0a0a0a',
+    padding: 40 
+  },
+  text: { color: '#fff', fontSize: 18 },
+
+  button: { 
+    marginTop: 30, 
+    paddingVertical: 16, 
+    paddingHorizontal: 40, 
+    backgroundColor: '#f59e0b', 
+    borderRadius: 12 
+  },
+  buttonText: { 
+    color: '#000', 
+    fontWeight: '700', 
+    fontSize: 16 
+  },
+
+  overlay: { 
+    ...StyleSheet.absoluteFillObject, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
   qrFrame: { width: 280, height: 280, position: 'relative' },
-  corner: { position: 'absolute', width: 50, height: 50, borderColor: '#f59e0b', borderWidth: 5 },
+  corner: {
+    position: 'absolute',
+    width: 50,
+    height: 50,
+    borderColor: '#ffffff',
+    borderWidth: 4,
+  },
   topLeft: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0 },
   topRight: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0 },
   bottomLeft: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0 },
   bottomRight: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0 },
 
-  instruction: { color: '#fff', fontSize: 18, fontWeight: '600', marginTop: 50 },
-  scanningText: { color: '#f59e0b', fontSize: 14, marginTop: 12 },
+  instruction: { color: '#ffffff', fontSize: 20, fontWeight: '600', marginTop: 60 },
+  subtitle: { color: '#aaaaaa', fontSize: 15, marginTop: 8 },
 
   cancelButton: {
     position: 'absolute',
@@ -197,8 +253,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 30,
   },
-  confirmTitle: { fontSize: 26, color: '#f59e0b', fontWeight: '700', marginBottom: 8 },
-  siteName: { fontSize: 32, color: '#f59e0b', fontWeight: '700', marginBottom: 60 },
+  siteIcon: {
+    width: 72,
+    height: 72,
+    backgroundColor: '#1f1f1f',
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  siteEmoji: { fontSize: 36 },
+  siteName: { fontSize: 28, color: '#ffffff', fontWeight: '700', marginBottom: 8 },
+  authText: { fontSize: 16, color: '#aaaaaa', marginBottom: 80 },
+
+  biometricsButton: {
+    backgroundColor: '#1f1f1f',
+    width: '100%',
+    paddingVertical: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  fingerprintContainer: {
+    width: 60,
+    height: 60,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  fingerprintIcon: { fontSize: 32 },
+  biometricsText: { color: '#ffffff', fontSize: 17, fontWeight: '600' },
 
   pinContainer: {
     flex: 1,
@@ -206,8 +292,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 30,
   },
-  pinTitle: { fontSize: 24, color: '#fff', marginBottom: 8 },
-  pinSubtitle: { fontSize: 16, color: '#aaa', textAlign: 'center', marginBottom: 40 },
+  pinTitle: { fontSize: 24, color: '#ffffff', marginBottom: 8 },
+  pinSubtitle: { fontSize: 16, color: '#aaaaaa', textAlign: 'center', marginBottom: 40 },
   pinInput: {
     backgroundColor: '#161616',
     color: '#fff',
