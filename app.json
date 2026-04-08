@@ -25,6 +25,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-barcode-scanner",
+      "react-native-vision-camera",
+      "expo-secure-store"
+    ]
   }
 }

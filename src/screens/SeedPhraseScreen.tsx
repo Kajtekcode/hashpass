@@ -1,5 +1,14 @@
+// src/screens/SeedPhraseScreen.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert, Dimensions } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  Pressable, 
+  ScrollView, 
+  Alert, 
+  Dimensions 
+} from 'react-native';
 import * as bip39 from 'bip39';
 import * as Crypto from 'expo-crypto';
 import { Buffer } from 'buffer';
@@ -10,7 +19,7 @@ const { width } = Dimensions.get('window');
 
 interface SeedPhraseScreenProps {
   onBack: () => void;
-  onContinue: (seedPhrase: string) => void;
+  onContinue: (seedPhrase: string) => void;   // Pass seed to PIN screen
 }
 
 type Step = 'view' | 'quiz';
@@ -66,7 +75,7 @@ export default function SeedPhraseScreen({ onBack, onContinue }: SeedPhraseScree
       const isCorrect = newAnswers.every((answer, index) => answer === quizWords[index]);
 
       if (isCorrect) {
-        onContinue(seedPhrase);   // Go directly to final success screen
+        onContinue(seedPhrase);   // Pass raw seed to PIN screen for encryption
       } else {
         Alert.alert("Not Quite Right", "The order was incorrect. Let's try again.", [
           { text: "Try Again", onPress: () => setUserAnswers([]) }
@@ -79,7 +88,6 @@ export default function SeedPhraseScreen({ onBack, onContinue }: SeedPhraseScree
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
-        {/* Progress */}
         <View style={styles.progressContainer}>
           {[1, 2].map((num) => (
             <View
@@ -94,11 +102,13 @@ export default function SeedPhraseScreen({ onBack, onContinue }: SeedPhraseScree
           ))}
         </View>
 
-        {/* Step 1: View Words */}
         {step === 'view' && (
           <>
             <Text style={styles.title}>Your Recovery Phrase</Text>
-            <Text style={styles.subtitle}>Write these 12 words down on paper</Text>
+            <Text style={styles.subtitle}>
+              Write these 12 words down on paper.{'\n'}
+              They are the only way to recover your account.
+            </Text>
 
             <View style={styles.seedGrid}>
               {words.map((word, index) => (
@@ -110,22 +120,25 @@ export default function SeedPhraseScreen({ onBack, onContinue }: SeedPhraseScree
             </View>
 
             <Pressable style={styles.primaryButton} onPress={startQuiz}>
-              <Text style={styles.primaryButtonText}>I've Saved Them</Text>
+              <Text style={styles.primaryButtonText}>I'VE SAVED THEM SECURELY</Text>
             </Pressable>
           </>
         )}
 
-        {/* Step 2: Quiz */}
         {step === 'quiz' && (
           <>
             <Text style={styles.title}>Confirm Your Words</Text>
-            <Text style={styles.subtitle}>Select the 3 words in the correct order</Text>
+            <Text style={styles.subtitle}>
+              Select the 3 words in the exact correct order
+            </Text>
 
             <View style={styles.quizSlots}>
               {quizWords.map((_, index) => (
                 <View key={index} style={styles.quizSlot}>
                   <Text style={styles.slotNumber}>{index + 1}</Text>
-                  <Text style={styles.slotText}>{userAnswers[index] || '———'}</Text>
+                  <Text style={styles.slotText}>
+                    {userAnswers[index] || '———'}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -148,9 +161,8 @@ export default function SeedPhraseScreen({ onBack, onContinue }: SeedPhraseScree
           </>
         )}
 
-        {/* Back Button */}
         <Pressable style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>Back</Text>
+          <Text style={styles.backButtonText}>← Back</Text>
         </Pressable>
       </ScrollView>
     </View>
@@ -158,98 +170,91 @@ export default function SeedPhraseScreen({ onBack, onContinue }: SeedPhraseScree
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0a0a0a',
-  },
+  container: { flex: 1, backgroundColor: '#0a0a0a' },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 100,
+    paddingTop: 50,
+    paddingBottom: 120,
   },
   progressContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 10,
-    marginBottom: 50,
+    gap: 8,
+    marginBottom: 40,
   },
   progressDot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: '#333',
   },
   progressActive: {
-    backgroundColor: '#f7931a',
-    width: 28,
+    backgroundColor: '#f59e0b',
+    width: 32,
   },
-
   title: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: '700',
     color: '#ffffff',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15.5,
     color: '#aaaaaa',
     textAlign: 'center',
-    marginBottom: 50,
-    lineHeight: 24,
+    lineHeight: 23,
+    marginBottom: 48,
   },
-
   seedGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     gap: 12,
-    marginBottom: 60,
+    marginBottom: 50,
   },
   wordCard: {
     backgroundColor: '#161616',
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 14,
     width: (width - 72) / 2,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#2a2a2a',
   },
   wordNumber: {
-    fontSize: 13,
-    color: '#f7931a',
-    marginBottom: 8,
+    fontSize: 12.5,
+    color: '#f59e0b',
+    marginBottom: 6,
   },
   word: {
-    fontSize: 16.5,
+    fontSize: 15.5,
     color: '#ffffff',
     fontWeight: '500',
   },
-
   quizSlots: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    width: '100%',
     marginBottom: 50,
   },
   quizSlot: {
     alignItems: 'center',
+    width: 90,
   },
   slotNumber: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#666',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   slotText: {
-    fontSize: 19,
-    color: '#f7931a',
+    fontSize: 18,
+    color: '#f59e0b',
     fontWeight: '600',
-    minWidth: 100,
+    minHeight: 28,
     textAlign: 'center',
   },
-
   optionsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -258,36 +263,35 @@ const styles = StyleSheet.create({
   },
   wordOption: {
     backgroundColor: '#1f1f1f',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingVertical: 15,
+    paddingHorizontal: 22,
     borderRadius: 14,
-    minWidth: 120,
+    minWidth: 110,
   },
   wordOptionSelected: {
-    backgroundColor: '#f7931a',
+    backgroundColor: '#f59e0b',
   },
   wordOptionText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 15.5,
     textAlign: 'center',
   },
-
   primaryButton: {
-    backgroundColor: '#f7931a',
-    paddingVertical: 16,        // Smaller button
+    backgroundColor: '#f59e0b',
+    paddingVertical: 17,
     borderRadius: 14,
     width: '100%',
-    marginTop: 20,
+    marginTop: 10,
   },
   primaryButtonText: {
     color: '#000',
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
   },
-
   backButton: {
-    marginTop: 40,
+    marginTop: 50,
+    alignSelf: 'center',
     paddingVertical: 12,
   },
   backButtonText: {

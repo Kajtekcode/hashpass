@@ -1,5 +1,12 @@
+// src/screens/EducationalScreen.tsx
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  Pressable, 
+  ScrollView 
+} from 'react-native';
 
 interface EducationalScreenProps {
   onContinue: () => void;
@@ -9,31 +16,48 @@ export default function EducationalScreen({ onContinue }: EducationalScreenProps
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
+
+        {/* Header Icon + Title */}
         <View style={styles.header}>
-          <Text style={styles.emoji}>🔐</Text>
+          <View style={styles.iconContainer}>
+            <Text style={styles.emoji}>🔐</Text>
+          </View>
           <Text style={styles.title}>Your Master Recovery Key</Text>
+          <Text style={styles.subtitle}>
+            12 words that control your entire Bitcoin identity
+          </Text>
         </View>
 
+        {/* Main Description */}
         <Text style={styles.description}>
-          These 12 words are the only way to recover your account if you lose your phone.
+          These 12 words are the **only** way to recover your account if you lose your phone or device.
         </Text>
 
+        {/* Why It Matters Card */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Why these 12 words matter</Text>
-          <Text style={styles.bullet}>• They control all your future login keys</Text>
-          <Text style={styles.bullet}>• They work like a master password for Bitcoin</Text>
-          <Text style={styles.bullet}>• No one can help you if they are lost</Text>
-          <Text style={styles.bullet}>• Never store them digitally</Text>
+          
+          <View style={styles.bulletContainer}>
+            <Text style={styles.bullet}>• They control all your future login keys</Text>
+            <Text style={styles.bullet}>• They act as your master Bitcoin key</Text>
+            <Text style={styles.bullet}>• No one can recover them for you — ever</Text>
+            <Text style={styles.bullet}>• Never store them digitally or in a screenshot</Text>
+          </View>
         </View>
 
-        <Text style={styles.warning}>
-          You will see these words only once during setup.{'\n'}
-          Please write them down on paper and store them securely.
-        </Text>
+        {/* Warning */}
+        <View style={styles.warningContainer}>
+          <Text style={styles.warning}>
+            You will see these words only once during setup.{'\n'}
+            Write them down on paper and store them in a safe place.
+          </Text>
+        </View>
 
+        {/* Continue Button */}
         <Pressable style={styles.primaryButton} onPress={onContinue}>
-          <Text style={styles.primaryButtonText}>I Understand — Continue</Text>
+          <Text style={styles.primaryButtonText}>I UNDERSTAND — CONTINUE</Text>
         </Pressable>
+
       </ScrollView>
     </View>
   );
@@ -47,65 +71,98 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 100,
-    paddingBottom: 40,
+    paddingTop: 80,
+    paddingBottom: 100,
   },
+
+  /* Header */
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 48,
+  },
+  iconContainer: {
+    width: 88,
+    height: 88,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: '#f59e0b',
   },
   emoji: {
-    fontSize: 64,
-    marginBottom: 16,
+    fontSize: 52,
   },
   title: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: '700',
     color: '#ffffff',
     textAlign: 'center',
+    marginBottom: 12,
   },
+  subtitle: {
+    fontSize: 16.5,
+    color: '#f59e0b',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+
+  /* Description */
   description: {
-    fontSize: 18,
+    fontSize: 17,
     color: '#cccccc',
     textAlign: 'center',
-    lineHeight: 28,
+    lineHeight: 26,
     marginBottom: 40,
   },
+
+  /* Card */
   card: {
     backgroundColor: '#161616',
-    borderRadius: 20,
+    borderRadius: 18,
     padding: 24,
     marginBottom: 40,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#f7931a',
-    marginBottom: 16,
+    fontWeight: '700',
+    color: '#f59e0b',
+    marginBottom: 18,
+  },
+  bulletContainer: {
+    gap: 14,
   },
   bullet: {
-    fontSize: 16,
+    fontSize: 15.5,
     color: '#ddd',
-    lineHeight: 26,
-    marginBottom: 12,
+    lineHeight: 24,
+  },
+
+  /* Warning */
+  warningContainer: {
+    marginBottom: 60,
   },
   warning: {
     color: '#ff6b6b',
     fontSize: 15.5,
     textAlign: 'center',
     lineHeight: 24,
-    marginBottom: 60,
   },
+
+  /* Button */
   primaryButton: {
-    backgroundColor: '#f7931a',
-    paddingVertical: 16,           // Smaller & balanced
-    borderRadius: 14,
+    backgroundColor: '#f59e0b',
+    paddingVertical: 18,
+    borderRadius: 16,
     width: '100%',
   },
   primaryButtonText: {
     color: '#000',
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 17.5,
+    fontWeight: '700',
     textAlign: 'center',
   },
 });
