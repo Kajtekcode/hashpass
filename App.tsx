@@ -7,8 +7,8 @@ global.Buffer = Buffer;
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import EducationalScreen from './src/screens/EducationalScreen';
 import SeedPhraseScreen from './src/screens/SeedPhraseScreen';
-import KeyDisplayScreen from './src/screens/KeyDisplayScreen';
 import PINSetupScreen from './src/screens/PINSetupScreen';
+import SetupLoadingScreen from './src/screens/SetupLoadingScreen';
 import BiometricsSetupScreen from './src/screens/BiometricsSetupScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import QRScannerScreen from './src/screens/QRScannerScreen';
@@ -16,23 +16,30 @@ import SettingsScreen from './src/screens/SettingsScreen';
 
 export default function App() {
   const [screen, setScreen] = useState<
-    'welcome' | 'educational' | 'seedPhrase' | 'keyDisplay' | 'pinSetup' | 'biometricsSetup' | 'home' | 'qrScanner' | 'settings'
+    'welcome' | 'educational' | 'seedPhrase' | 'pinSetup' | 
+    'setupLoading' | 'biometricsSetup' | 'home' | 'qrScanner' | 'settings'
   >('welcome');
 
-  const [seedPhrase, setSeedPhrase] = useState<string>(''); // Temporary storage until encrypted
+  const [seedPhrase, setSeedPhrase] = useState<string>('');
+  const [currentPin, setCurrentPin] = useState<string>(''); // Only used briefly for loading screen
 
+  // Navigation handlers
   const handleGetStarted = () => setScreen('educational');
 
   const handleContinueToSeed = () => setScreen('seedPhrase');
-  
-    const handleSeedContinue = (generatedSeed: string) => {
+
+  const handleSeedContinue = (generatedSeed: string) => {
     setSeedPhrase(generatedSeed);
-    setScreen('keyDisplay');
+    setScreen('pinSetup');
   };
 
-  const handleKeyDisplayDone = () => setScreen('pinSetup');
+  const handlePINComplete = (pin: string) => {
+    setCurrentPin(pin);
+    setScreen('setupLoading');
+  };
 
-  const handlePINComplete = () => {
+  const handleLoadingComplete = () => {
+    setCurrentPin(''); // Clear PIN after use
     setScreen('biometricsSetup');
   };
 
@@ -53,6 +60,12 @@ export default function App() {
     setScreen('home');
   };
 
+  const handleInvalidQR = () => {
+    setTimeout(() => {
+      Alert.alert('Invalid QR Code', 'Please scan a valid Hash Pass login QR code.');
+    }, 300);
+  };
+
   return (
     <>
       {screen === 'welcome' && <WelcomeScreen onGetStarted={handleGetStarted} />}
@@ -68,18 +81,19 @@ export default function App() {
         />
       )}
 
-      {screen === 'keyDisplay' && (
-        <KeyDisplayScreen
-          onBack={handleBack}
-          onDone={handleKeyDisplayDone}
-        />
-      )}
-
       {screen === 'pinSetup' && (
         <PINSetupScreen
           seedPhrase={seedPhrase}
           onComplete={handlePINComplete}
-          onBack={handleKeyDisplayDone}
+          onBack={handleBack}
+        />
+      )}
+
+      {screen === 'setupLoading' && (
+        <SetupLoadingScreen 
+          seedPhrase={seedPhrase}
+          pin={currentPin}
+          onComplete={handleLoadingComplete}
         />
       )}
 
@@ -99,16 +113,9 @@ export default function App() {
 
       {screen === 'qrScanner' && (
         <QRScannerScreen 
-          onClose={() => setScreen('home')}
-          onScanSuccess={(site) => {
-            // handle successful login
-            setScreen('home');
-          }}
-          onInvalidQR={() => {
-            setTimeout(() => {
-              Alert.alert('Invalid QR Code', 'Please scan a valid Hash Pass login QR code.');
-            }, 300);   // Small delay to let the screen fully return to Home
-          }}
+          onClose={goToHome}
+          onScanSuccess={handleQRScanComplete}
+          onInvalidQR={handleInvalidQR}
         />
       )}
 

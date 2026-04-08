@@ -11,11 +11,10 @@ import {
   Platform, 
   ScrollView 
 } from 'react-native';
-import { bitcoinService } from '../services/bitcoinService';
 
 interface PINSetupScreenProps {
   seedPhrase: string;
-  onComplete: () => void;
+  onComplete: (pin: string) => void;   // Pass PIN to loading screen
   onBack: () => void;
 }
 
@@ -23,7 +22,6 @@ export default function PINSetupScreen({ seedPhrase, onComplete, onBack }: PINSe
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [step, setStep] = useState<'create' | 'confirm'>('create');
-  const [isLoading, setIsLoading] = useState(false);
 
   const canContinue = step === 'create' 
     ? pin.length === 6 
@@ -35,31 +33,18 @@ export default function PINSetupScreen({ seedPhrase, onComplete, onBack }: PINSe
       return;
     }
     setStep('confirm');
-    setConfirmPin(''); // Clear confirm field
+    setConfirmPin('');
   };
 
-  const handleConfirmPIN = async () => {
+  const handleConfirmPIN = () => {
     if (pin !== confirmPin) {
       Alert.alert("PINs Don't Match", "Please try again.");
       setConfirmPin('');
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      await bitcoinService.saveEncryptedMnemonic(seedPhrase, pin);
-      console.log('✅ Seed phrase encrypted and saved successfully');
-
-      Alert.alert('Setup Complete', 'Your recovery phrase is now securely protected.', [
-        { text: 'Continue to Hash Pass', onPress: onComplete }
-      ]);
-    } catch (error: any) {
-      console.error('Encryption error:', error);
-      Alert.alert('Error', 'Failed to save your recovery phrase. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+    // Immediately go to loading screen and pass the PIN
+    onComplete(pin);
   };
 
   return (
@@ -79,7 +64,7 @@ export default function PINSetupScreen({ seedPhrase, onComplete, onBack }: PINSe
         
         <Text style={styles.subtitle}>
           {step === 'create' 
-            ? 'This PIN protects your Bitcoin recovery phrase.' 
+            ? 'This PIN will protect your recovery phrase.' 
             : 'Re-enter the same 6 digits to confirm'}
         </Text>
 
@@ -98,13 +83,10 @@ export default function PINSetupScreen({ seedPhrase, onComplete, onBack }: PINSe
         <Pressable 
           style={[styles.primaryButton, !canContinue && styles.buttonDisabled]}
           onPress={step === 'create' ? handleCreatePIN : handleConfirmPIN}
-          disabled={!canContinue || isLoading}
+          disabled={!canContinue}
         >
           <Text style={styles.primaryButtonText}>
-            {isLoading 
-              ? 'Saving Securely...' 
-              : (step === 'create' ? 'Continue' : 'Confirm PIN')
-            }
+            {step === 'create' ? 'Continue' : 'Confirm PIN'}
           </Text>
         </Pressable>
 
@@ -117,10 +99,7 @@ export default function PINSetupScreen({ seedPhrase, onComplete, onBack }: PINSe
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#0a0a0a' 
-  },
+  container: { flex: 1, backgroundColor: '#0a0a0a' },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',

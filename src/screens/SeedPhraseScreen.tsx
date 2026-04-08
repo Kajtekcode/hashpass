@@ -19,7 +19,7 @@ const { width } = Dimensions.get('window');
 
 interface SeedPhraseScreenProps {
   onBack: () => void;
-  onContinue: (seedPhrase: string) => void;   // Pass seed to PIN screen
+  onContinue: (seedPhrase: string) => void;
 }
 
 type Step = 'view' | 'quiz';
@@ -75,7 +75,7 @@ export default function SeedPhraseScreen({ onBack, onContinue }: SeedPhraseScree
       const isCorrect = newAnswers.every((answer, index) => answer === quizWords[index]);
 
       if (isCorrect) {
-        onContinue(seedPhrase);   // Pass raw seed to PIN screen for encryption
+        onContinue(seedPhrase);
       } else {
         Alert.alert("Not Quite Right", "The order was incorrect. Let's try again.", [
           { text: "Try Again", onPress: () => setUserAnswers([]) }
@@ -87,7 +87,7 @@ export default function SeedPhraseScreen({ onBack, onContinue }: SeedPhraseScree
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-
+        {/* Progress */}
         <View style={styles.progressContainer}>
           {[1, 2].map((num) => (
             <View
@@ -104,10 +104,9 @@ export default function SeedPhraseScreen({ onBack, onContinue }: SeedPhraseScree
 
         {step === 'view' && (
           <>
-            <Text style={styles.title}>Your Recovery Phrase</Text>
+            <Text style={styles.title}>Your 12-word recovery phrase</Text>
             <Text style={styles.subtitle}>
-              Write these 12 words down on paper.{'\n'}
-              They are the only way to recover your account.
+              Write these words down in order. They are the only way to recover your account.
             </Text>
 
             <View style={styles.seedGrid}>
@@ -127,9 +126,9 @@ export default function SeedPhraseScreen({ onBack, onContinue }: SeedPhraseScree
 
         {step === 'quiz' && (
           <>
-            <Text style={styles.title}>Confirm Your Words</Text>
+            <Text style={styles.title}>Confirm the order</Text>
             <Text style={styles.subtitle}>
-              Select the 3 words in the exact correct order
+              Tap the 3 words in the correct sequence
             </Text>
 
             <View style={styles.quizSlots}>
@@ -170,12 +169,15 @@ export default function SeedPhraseScreen({ onBack, onContinue }: SeedPhraseScree
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: {
+    flex: 1,
+    backgroundColor: '#0a0a0a',
+  },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 50,
-    paddingBottom: 120,
+    paddingBottom: 100,
   },
   progressContainer: {
     flexDirection: 'row',
@@ -216,21 +218,21 @@ const styles = StyleSheet.create({
   },
   wordCard: {
     backgroundColor: '#161616',
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 16,
-    borderRadius: 14,
+    borderRadius: 16,
     width: (width - 72) / 2,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: '#242424',
   },
   wordNumber: {
-    fontSize: 12.5,
-    color: '#f59e0b',
+    fontSize: 13,
+    color: '#888888',
     marginBottom: 6,
   },
   word: {
-    fontSize: 15.5,
+    fontSize: 16,
     color: '#ffffff',
     fontWeight: '500',
   },
@@ -241,15 +243,15 @@ const styles = StyleSheet.create({
   },
   quizSlot: {
     alignItems: 'center',
-    width: 90,
+    width: 88,
   },
   slotNumber: {
     fontSize: 14,
-    color: '#666',
+    color: '#666666',
     marginBottom: 8,
   },
   slotText: {
-    fontSize: 18,
+    fontSize: 17,
     color: '#f59e0b',
     fontWeight: '600',
     minHeight: 28,
@@ -263,8 +265,8 @@ const styles = StyleSheet.create({
   },
   wordOption: {
     backgroundColor: '#1f1f1f',
-    paddingVertical: 15,
-    paddingHorizontal: 22,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
     borderRadius: 14,
     minWidth: 110,
   },
@@ -277,14 +279,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   primaryButton: {
-    backgroundColor: '#f59e0b',
+    backgroundColor: '#ffffff',
     paddingVertical: 17,
-    borderRadius: 14,
+    borderRadius: 16,
     width: '100%',
     marginTop: 10,
   },
   primaryButtonText: {
-    color: '#000',
+    color: '#000000',
     fontSize: 17,
     fontWeight: '700',
     textAlign: 'center',
@@ -295,7 +297,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   backButtonText: {
-    color: '#777',
+    color: '#777777',
     fontSize: 16,
   },
 });

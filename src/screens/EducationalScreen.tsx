@@ -5,7 +5,8 @@ import {
   Text, 
   StyleSheet, 
   Pressable, 
-  ScrollView 
+  ScrollView, 
+  SafeAreaView 
 } from 'react-native';
 
 interface EducationalScreenProps {
@@ -14,52 +15,66 @@ interface EducationalScreenProps {
 
 export default function EducationalScreen({ onContinue }: EducationalScreenProps) {
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-
-        {/* Header Icon + Title */}
-        <View style={styles.header}>
-          <View style={styles.iconContainer}>
-            <Text style={styles.emoji}>🔐</Text>
-          </View>
-          <Text style={styles.title}>Your Master Recovery Key</Text>
-          <Text style={styles.subtitle}>
-            12 words that control your entire Bitcoin identity
-          </Text>
-        </View>
-
-        {/* Main Description */}
-        <Text style={styles.description}>
-          These 12 words are the **only** way to recover your account if you lose your phone or device.
-        </Text>
-
-        {/* Why It Matters Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Why these 12 words matter</Text>
-          
-          <View style={styles.bulletContainer}>
-            <Text style={styles.bullet}>• They control all your future login keys</Text>
-            <Text style={styles.bullet}>• They act as your master Bitcoin key</Text>
-            <Text style={styles.bullet}>• No one can recover them for you — ever</Text>
-            <Text style={styles.bullet}>• Never store them digitally or in a screenshot</Text>
+        {/* Header Icon */}
+        <View style={styles.iconContainer}>
+          <View style={styles.lockIconWrapper}>
+            <Text style={styles.lockIcon}>🔒</Text>
           </View>
         </View>
 
-        {/* Warning */}
-        <View style={styles.warningContainer}>
-          <Text style={styles.warning}>
-            You will see these words only once during setup.{'\n'}
-            Write them down on paper and store them in a safe place.
-          </Text>
+        {/* Title */}
+        <Text style={styles.title}>Your security, simplified</Text>
+
+        {/* Feature Cards */}
+        <View style={styles.featuresContainer}>
+          {/* Card 1 */}
+          <View style={styles.featureCard}>
+            <View style={styles.featureIconWrapper}>
+              <Text style={styles.featureIcon}>🔑</Text>
+            </View>
+            <View style={styles.featureText}>
+              <Text style={styles.featureTitle}>Your keys, your control</Text>
+              <Text style={styles.featureDescription}>
+                Only you have access. No one else can log in as you.
+              </Text>
+            </View>
+          </View>
+
+          {/* Card 2 */}
+          <View style={styles.featureCard}>
+            <View style={styles.featureIconWrapper}>
+              <Text style={styles.featureIcon}>🔐</Text>
+            </View>
+            <View style={styles.featureText}>
+              <Text style={styles.featureTitle}>Cryptographic signatures</Text>
+              <Text style={styles.featureDescription}>
+                Bitcoin-grade security protects every login.
+              </Text>
+            </View>
+          </View>
+
+          {/* Card 3 */}
+          <View style={styles.featureCard}>
+            <View style={styles.featureIconWrapper}>
+              <Text style={styles.featureIcon}>📱</Text>
+            </View>
+            <View style={styles.featureText}>
+              <Text style={styles.featureTitle}>No central server</Text>
+              <Text style={styles.featureDescription}>
+                Everything stays on your device. No data leaks.
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Continue Button */}
-        <Pressable style={styles.primaryButton} onPress={onContinue}>
-          <Text style={styles.primaryButtonText}>I UNDERSTAND — CONTINUE</Text>
+        <Pressable style={styles.continueButton} onPress={onContinue}>
+          <Text style={styles.continueButtonText}>Continue</Text>
         </Pressable>
-
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -70,99 +85,87 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 80,
-    paddingBottom: 100,
-  },
-
-  /* Header */
-  header: {
     alignItems: 'center',
-    marginBottom: 48,
+    paddingHorizontal: 24,
+    paddingTop: 70,
+    paddingBottom: 40,
   },
   iconContainer: {
-    width: 88,
-    height: 88,
+    marginBottom: 40,
+  },
+  lockIconWrapper: {
+    width: 72,
+    height: 72,
     backgroundColor: '#1a1a1a',
-    borderRadius: 24,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
-    borderWidth: 2,
-    borderColor: '#f59e0b',
+    borderWidth: 1,
+    borderColor: '#333333',
   },
-  emoji: {
-    fontSize: 52,
+  lockIcon: {
+    fontSize: 36,
+    color: '#ffffff',
   },
   title: {
-    fontSize: 30,
+    fontSize: 29,
     fontWeight: '700',
     color: '#ffffff',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 52,
+    letterSpacing: -0.6,
   },
-  subtitle: {
-    fontSize: 16.5,
-    color: '#f59e0b',
-    textAlign: 'center',
-    fontWeight: '600',
+  featuresContainer: {
+    width: '100%',
+    gap: 14,
+    marginBottom: 70,
   },
-
-  /* Description */
-  description: {
-    fontSize: 17,
-    color: '#cccccc',
-    textAlign: 'center',
-    lineHeight: 26,
-    marginBottom: 40,
-  },
-
-  /* Card */
-  card: {
+  featureCard: {
+    flexDirection: 'row',
     backgroundColor: '#161616',
     borderRadius: 18,
-    padding: 24,
-    marginBottom: 40,
+    padding: 20,
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: '#252525',
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#f59e0b',
-    marginBottom: 18,
+  featureIconWrapper: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#222222',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 18,
   },
-  bulletContainer: {
-    gap: 14,
+  featureIcon: {
+    fontSize: 23,
+    color: '#cccccc',
   },
-  bullet: {
-    fontSize: 15.5,
-    color: '#ddd',
-    lineHeight: 24,
+  featureText: {
+    flex: 1,
   },
-
-  /* Warning */
-  warningContainer: {
-    marginBottom: 60,
+  featureTitle: {
+    fontSize: 16.5,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 5,
   },
-  warning: {
-    color: '#ff6b6b',
-    fontSize: 15.5,
-    textAlign: 'center',
-    lineHeight: 24,
+  featureDescription: {
+    fontSize: 14,
+    color: '#aaaaaa',
+    lineHeight: 20,
   },
-
-  /* Button */
-  primaryButton: {
-    backgroundColor: '#f59e0b',
+  continueButton: {
+    backgroundColor: '#ffffff',
+    width: '100%',
     paddingVertical: 18,
     borderRadius: 16,
-    width: '100%',
+    alignItems: 'center',
   },
-  primaryButtonText: {
-    color: '#000',
+  continueButtonText: {
+    color: '#000000',
     fontSize: 17.5,
     fontWeight: '700',
-    textAlign: 'center',
   },
 });
