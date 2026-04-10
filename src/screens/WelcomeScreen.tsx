@@ -5,8 +5,8 @@ import {
   Text, 
   StyleSheet, 
   Pressable, 
-  ScrollView, 
-  SafeAreaView 
+  SafeAreaView,
+  StatusBar 
 } from 'react-native';
 
 interface WelcomeScreenProps {
@@ -16,86 +16,27 @@ interface WelcomeScreenProps {
 export default function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <StatusBar barStyle="light-content" />
+
+      <View style={styles.content}>
         {/* Logo */}
         <View style={styles.logoContainer}>
-          <View style={styles.logoWrapper}>
-            <Text style={styles.keyIcon}>🔑</Text>
-          </View>
-          <View style={styles.lockBadge}>
-            <Text style={styles.lockIcon}>🔒</Text>
+          <View style={styles.logo}>
+            <Text style={styles.logoIcon}>🔑</Text>
           </View>
         </View>
 
-        {/* Title & Subtitle */}
+        {/* Title */}
         <Text style={styles.title}>Hash Pass</Text>
         <Text style={styles.subtitle}>Login without passwords</Text>
 
-        {/* Feature Cards */}
-        <View style={styles.featuresContainer}>
-          {/* Card 1 - Instant login */}
-          <View style={styles.featureCard}>
-            <View style={[styles.featureIconContainer, { backgroundColor: '#854D0E' }]}>
-              <Text style={styles.featureIcon}>⚡</Text>
-            </View>
-            <View style={styles.featureTextContainer}>
-              <Text style={styles.featureTitle}>Instant login</Text>
-              <Text style={styles.featureDescription}>
-                Scan QR code, confirm with biometrics, done
-              </Text>
-            </View>
-          </View>
-
-          {/* Card 2 - Bitcoin-grade security */}
-          <View style={styles.featureCard}>
-            <View style={[styles.featureIconContainer, { backgroundColor: '#9C4221' }]}>
-              <Text style={styles.featureIcon}>🛡️</Text>
-            </View>
-            <View style={styles.featureTextContainer}>
-              <Text style={styles.featureTitle}>Bitcoin-grade security</Text>
-              <Text style={styles.featureDescription}>
-                Cryptographic signatures protect every login
-              </Text>
-            </View>
-          </View>
-
-          {/* Card 3 - You own your keys */}
-          <View style={styles.featureCard}>
-            <View style={[styles.featureIconContainer, { backgroundColor: '#1E3A8A' }]}>
-              <Text style={styles.featureIcon}>🔒</Text>
-            </View>
-            <View style={styles.featureTextContainer}>
-              <Text style={styles.featureTitle}>You own your keys</Text>
-              <Text style={styles.featureDescription}>
-                No servers, no data leaks, total privacy
-              </Text>
-            </View>
-          </View>
+        {/* Get Started Button - positioned nicely at bottom */}
+        <View style={styles.buttonContainer}>
+          <Pressable style={styles.button} onPress={onGetStarted}>
+            <Text style={styles.buttonText}>Get Started</Text>
+          </Pressable>
         </View>
-
-        {/* Get Started Button */}
-        <Pressable style={styles.getStartedButton} onPress={onGetStarted}>
-          <Text style={styles.getStartedButtonText}>Get Started</Text>
-        </Pressable>
-
-        {/* Bottom Tags */}
-        <View style={styles.bottomTags}>
-          <View style={styles.tag}>
-            <Text style={styles.tagIcon}>📱</Text>
-            <Text style={styles.tagText}>Biometric</Text>
-          </View>
-          <View style={styles.tagDot} />
-          <View style={styles.tag}>
-            <Text style={styles.tagIcon}>🌐</Text>
-            <Text style={styles.tagText}>Universal</Text>
-          </View>
-          <View style={styles.tagDot} />
-          <View style={styles.tag}>
-            <Text style={styles.tagIcon}>🔐</Text>
-            <Text style={styles.tagText}>Private</Text>
-          </View>
-        </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -103,137 +44,59 @@ export default function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#000000',
   },
-  scrollContent: {
-    flexGrow: 1,
+  content: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 50,
-    paddingBottom: 40,
+    paddingHorizontal: 32,
   },
   logoContainer: {
-    position: 'relative',
-    marginBottom: 28,
+    marginBottom: 48,
   },
-  logoWrapper: {
-    width: 92,
-    height: 92,
+  logo: {
+    width: 108,
+    height: 108,
     backgroundColor: '#ffffff',
-    borderRadius: 24,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
   },
-  keyIcon: {
-    fontSize: 46,
-  },
-  lockBadge: {
-    position: 'absolute',
-    bottom: -6,
-    right: -6,
-    width: 34,
-    height: 34,
-    backgroundColor: '#f59e0b',
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#0a0a0a',
-  },
-  lockIcon: {
-    fontSize: 18,
-    color: '#fff',
+  logoIcon: {
+    fontSize: 52,
   },
   title: {
-    fontSize: 36,
+    fontSize: 38,
     fontWeight: '700',
     color: '#ffffff',
-    marginBottom: 6,
-    letterSpacing: -0.8,
+    marginBottom: 12,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 17,
     color: '#aaaaaa',
-    marginBottom: 52,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 80,
   },
-  featuresContainer: {
+  buttonContainer: {
     width: '100%',
-    gap: 14,
-    marginBottom: 48,
+    paddingHorizontal: 20,
   },
-  featureCard: {
-    flexDirection: 'row',
-    backgroundColor: '#161616',
-    borderRadius: 18,
-    padding: 18,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#242424',
-  },
-  featureIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  featureIcon: {
-    fontSize: 24,
-  },
-  featureTextContainer: {
-    flex: 1,
-  },
-  featureTitle: {
-    fontSize: 16.5,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 3,
-  },
-  featureDescription: {
-    fontSize: 14,
-    color: '#aaaaaa',
-    lineHeight: 19,
-  },
-  getStartedButton: {
+  button: {
     backgroundColor: '#ffffff',
-    width: '100%',
-    paddingVertical: 17,
-    borderRadius: 16,
+    paddingVertical: 18,
+    borderRadius: 999,
     alignItems: 'center',
   },
-  getStartedButtonText: {
+  buttonText: {
     color: '#000000',
-    fontSize: 17.5,
+    fontSize: 18,
     fontWeight: '700',
-  },
-  bottomTags: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginTop: 20,
-  },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  tagIcon: {
-    fontSize: 14,
-  },
-  tagText: {
-    color: '#777777',
-    fontSize: 13,
-  },
-  tagDot: {
-    width: 3,
-    height: 3,
-    backgroundColor: '#444444',
-    borderRadius: 1.5,
   },
 });

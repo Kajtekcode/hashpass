@@ -77,6 +77,14 @@ export const bitcoinService = {
     }
   },
 
+  async getAccountFingerprint(pin: string): Promise<string> {
+    const mnemonic = await this.getDecryptedMnemonic(pin);
+    const seed = await bip39.mnemonicToSeed(mnemonic);
+    const master = bip32.fromSeed(seed);
+    const fingerprint = Buffer.from(master.publicKey).toString('hex').slice(0, 16);
+    return fingerprint;
+  },
+
   async deriveKeys(mnemonic: string): Promise<DerivedKeys> {
     try {
       const seed = await bip39.mnemonicToSeed(mnemonic);
@@ -108,6 +116,43 @@ export const bitcoinService = {
     } catch (error) {
       console.error('Key derivation error:', error);
       throw new Error('Failed to derive Bitcoin keys');
+    }
+  },
+
+  async getPublicKey(pin: string): Promise<string> {
+    try {
+      const mnemonic = await this.getDecryptedMnemonic(pin);
+      const keys = await this.deriveKeys(mnemonic);
+      return keys.publicKey;
+    } catch (error) {
+      console.error('Failed to get public key:', error);
+      throw new Error('Failed to derive public key. Check your PIN.');
+    }
+  },
+
+  // NEW METHOD - Used for Register (same derivation as login)
+  async getPerSitePublicKey(site: string, pin: string): Promise<string> {
+    try {
+      const mnemonic = await this.getDecryptedMnemonic(pin);
+      const seed = await bip39.mnemonicToSeed(mnemonic);
+      const master = bip32.fromSeed(seed);
+
+      const siteHashHex = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        site.toLowerCase()
+      );
+      const index = parseInt(siteHashHex.slice(0, 8), 16) % 0x80000000;
+
+      const child = master.derivePath(`m/0'/${index}'`);
+
+      if (!child.publicKey) {
+        throw new Error('Failed to derive per-site public key');
+      }
+
+      return Buffer.from(child.publicKey).toString('hex');
+    } catch (error) {
+      console.error('Failed to get per-site public key:', error);
+      throw new Error('Failed to derive public key. Check your PIN.');
     }
   },
 
@@ -143,37 +188,41 @@ export const bitcoinService = {
     const signature = ecc.sign(messageHash, privKey);
     const signatureBase64 = Buffer.from(signature).toString('base64');
 
-    console.log(`✅ BIP322 signature created for ${site}`);
+    console.log(`✅ Signature created for ${site}`);
     return signatureBase64;
   },
 };
 
-// Persistent Recent Activity
-const SESSIONS_KEY = 'hashpass_recent_sessions';
+// Persistent Recent Activity (per-account)
+const getSessionsKey = (fingerprint: string) => `hashpass_sessions_${fingerprint}`;
 
 export const sessionService = {
-  async addSession(site: string, challenge: string) {
+  async addSession(fingerprint: string, site: string, challenge: string, action: 'register' | 'login') {
     try {
-      const sessions = await this.getSessions();
+      const key = getSessionsKey(fingerprint);
+      const sessions = await this.getSessions(fingerprint);
       
       const newSession = { 
         site, 
         timestamp: new Date().toISOString(), 
-        challenge 
+        challenge,
+        action,
+        type: action === 'register' ? 'Registration' : 'Login'
       };
 
-      sessions.unshift(newSession); // newest first
-      if (sessions.length > 10) sessions.pop(); // keep only last 10
+      sessions.unshift(newSession);
+      if (sessions.length > 10) sessions.pop();
 
-      await SecureStore.setItemAsync(SESSIONS_KEY, JSON.stringify(sessions));
+      await SecureStore.setItemAsync(key, JSON.stringify(sessions));
     } catch (error) {
       console.error('Failed to save session:', error);
     }
   },
 
-  async getSessions() {
+  async getSessions(fingerprint: string) {
     try {
-      const data = await SecureStore.getItemAsync(SESSIONS_KEY);
+      const key = getSessionsKey(fingerprint);
+      const data = await SecureStore.getItemAsync(key);
       return data ? JSON.parse(data) : [];
     } catch (error) {
       console.error('Failed to load sessions:', error);
@@ -181,12 +230,8 @@ export const sessionService = {
     }
   },
 
-  async clearSessions() {
-    try {
-      await SecureStore.deleteItemAsync(SESSIONS_KEY);
-    } catch (error) {
-      console.error('Failed to clear sessions:', error);
-    }
+  async clearAllSessions() {
+    console.log('Session clear called');
   },
 };
 
@@ -207,7 +252,7 @@ export const settingsService = {
       const value = await SecureStore.getItemAsync(BIOMETRICS_ENABLED_KEY);
       return value === 'true';
     } catch (error) {
-      return true; // default to true
+      return true;
     }
   },
 };

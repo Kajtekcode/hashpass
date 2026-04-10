@@ -5,16 +5,14 @@ import {
   Text, 
   StyleSheet, 
   Pressable, 
-  TextInput, 
-  Alert, 
-  KeyboardAvoidingView, 
-  Platform, 
+  Alert,
   ScrollView 
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface PINSetupScreenProps {
   seedPhrase: string;
-  onComplete: (pin: string) => void;   // Pass PIN to loading screen
+  onComplete: (pin: string) => void;
   onBack: () => void;
 }
 
@@ -23,148 +21,206 @@ export default function PINSetupScreen({ seedPhrase, onComplete, onBack }: PINSe
   const [confirmPin, setConfirmPin] = useState('');
   const [step, setStep] = useState<'create' | 'confirm'>('create');
 
-  const canContinue = step === 'create' 
-    ? pin.length === 6 
-    : confirmPin.length === 6;
+  const currentValue = step === 'create' ? pin : confirmPin;
+  const dots = Array(6).fill(0).map((_, i) => i < currentValue.length);
 
-  const handleCreatePIN = () => {
-    if (pin.length !== 6) {
-      Alert.alert('Invalid PIN', 'Please enter exactly 6 digits.');
-      return;
+  const handleKeyPress = (key: string) => {
+    if (step === 'create') {
+      if (pin.length < 6) setPin(pin + key);
+    } else {
+      if (confirmPin.length < 6) setConfirmPin(confirmPin + key);
     }
-    setStep('confirm');
-    setConfirmPin('');
   };
 
-  const handleConfirmPIN = () => {
-    if (pin !== confirmPin) {
-      Alert.alert("PINs Don't Match", "Please try again.");
+  const handleDelete = () => {
+    if (step === 'create') {
+      setPin(pin.slice(0, -1));
+    } else {
+      setConfirmPin(confirmPin.slice(0, -1));
+    }
+  };
+
+  const handleContinue = () => {
+    if (step === 'create') {
+      if (pin.length !== 6) {
+        Alert.alert('Invalid PIN', 'Please enter exactly 6 digits.');
+        return;
+      }
+      setStep('confirm');
       setConfirmPin('');
-      return;
+    } else {
+      if (pin !== confirmPin) {
+        Alert.alert("PINs Don't Match", "Please try again.");
+        setConfirmPin('');
+        return;
+      }
+      onComplete(pin);
     }
-
-    // Immediately go to loading screen and pass the PIN
-    onComplete(pin);
   };
+
+  const isComplete = step === 'create' ? pin.length === 6 : confirmPin.length === 6;
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={80}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.iconContainer}>
-          <Text style={styles.icon}>🔑</Text>
-        </View>
-
+    <SafeAreaView style={styles.container}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.title}>
-          {step === 'create' ? 'Create 6-Digit PIN' : 'Confirm Your PIN'}
+          {step === 'create' ? 'Create your PIN' : 'Confirm your PIN'}
         </Text>
         
         <Text style={styles.subtitle}>
           {step === 'create' 
-            ? 'This PIN will protect your recovery phrase.' 
-            : 'Re-enter the same 6 digits to confirm'}
+            ? 'Choose a 6-digit PIN to secure your wallet' 
+            : 'Re-enter your PIN to confirm'}
         </Text>
 
-        <TextInput
-          style={styles.pinInput}
-          value={step === 'create' ? pin : confirmPin}
-          onChangeText={step === 'create' ? setPin : setConfirmPin}
-          keyboardType="number-pad"
-          maxLength={6}
-          secureTextEntry
-          textAlign="center"
-          placeholder="••••••"
-          placeholderTextColor="#555"
-        />
+        <View style={styles.dotsContainer}>
+          {dots.map((filled, i) => (
+            <View key={i} style={[styles.dot, filled && styles.dotFilled]} />
+          ))}
+        </View>
 
+        <View style={styles.keypad}>
+          {[1,2,3,4,5,6,7,8,9].map((num) => (
+            <Pressable 
+              key={num} 
+              style={styles.key} 
+              onPress={() => handleKeyPress(num.toString())}
+            >
+              <Text style={styles.keyText}>{num}</Text>
+            </Pressable>
+          ))}
+
+          <View style={styles.spacer} />
+
+          <Pressable 
+            style={styles.key} 
+            onPress={() => handleKeyPress('0')}
+          >
+            <Text style={styles.keyText}>0</Text>
+          </Pressable>
+
+          <Pressable 
+            style={styles.deleteKey} 
+            onPress={handleDelete}
+          >
+            <Text style={styles.deleteText}>⌫</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+
+      {/* Fixed button */}
+      <View style={styles.buttonContainer}>
         <Pressable 
-          style={[styles.primaryButton, !canContinue && styles.buttonDisabled]}
-          onPress={step === 'create' ? handleCreatePIN : handleConfirmPIN}
-          disabled={!canContinue}
+          style={[styles.continueButton, !isComplete && styles.buttonDisabled]}
+          onPress={handleContinue}
+          disabled={!isComplete}
         >
-          <Text style={styles.primaryButtonText}>
+          <Text style={styles.continueButtonText}>
             {step === 'create' ? 'Continue' : 'Confirm PIN'}
           </Text>
         </Pressable>
-
-        <Pressable style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#000000' 
+  },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 60,
+    paddingHorizontal: 24,
+    paddingTop: 40,        // smaller top margin (half of previous)
+    paddingBottom: 180,
   },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 32,
-    borderWidth: 2,
-    borderColor: '#f59e0b',
-  },
-  icon: { fontSize: 42 },
-
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '700',
     color: '#ffffff',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 15.5,
+    fontSize: 15,
     color: '#aaaaaa',
     textAlign: 'center',
-    lineHeight: 24,
+    marginBottom: 40,
+  },
+  dotsContainer: {
+    flexDirection: 'row',
+    gap: 12,
     marginBottom: 50,
+    justifyContent: 'center',
   },
-  pinInput: {
-    backgroundColor: '#161616',
-    color: '#fff',
-    fontSize: 34,
-    letterSpacing: 16,
-    paddingVertical: 22,
+  dot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#333',
+  },
+  dotFilled: {
+    backgroundColor: '#f59e0b',
+  },
+  keypad: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: '100%',
+    maxWidth: 300,
+    gap: 12,
+    justifyContent: 'center',
+  },
+  key: {
+    width: 72,
+    height: 72,
+    backgroundColor: '#1a1a1a',
     borderRadius: 16,
-    width: 240,
-    textAlign: 'center',
-    marginBottom: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  primaryButton: {
+  keyText: {
+    fontSize: 26,
+    color: '#ffffff',
+    fontWeight: '500',
+  },
+  spacer: {
+    width: 72,
+    height: 72,
+  },
+  deleteKey: {
+    width: 72,
+    height: 72,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteText: {
+    fontSize: 24,
+    color: '#ff6b6b',
+  },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 40,
+    left: 24,
+    right: 24,
+  },
+  continueButton: {
     backgroundColor: '#f59e0b',
     paddingVertical: 18,
-    borderRadius: 16,
-    width: '100%',
+    borderRadius: 999,
     alignItems: 'center',
   },
   buttonDisabled: {
-    backgroundColor: '#333',
+    backgroundColor: '#444',
   },
-  primaryButtonText: {
-    color: '#000',
-    fontSize: 17,
+  continueButtonText: {
+    color: '#000000',
+    fontSize: 18,
     fontWeight: '700',
-  },
-  backButton: {
-    marginTop: 50,
-  },
-  backButtonText: {
-    color: '#777',
-    fontSize: 16,
   },
 });

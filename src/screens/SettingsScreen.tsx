@@ -18,7 +18,6 @@ interface SettingsScreenProps {
 export default function SettingsScreen({ onBack }: SettingsScreenProps) {
   const [biometricsEnabled, setBiometricsEnabled] = useState(true);
 
-  // Load current setting
   useEffect(() => {
     const loadSetting = async () => {
       const enabled = await settingsService.getBiometricsEnabled();
@@ -28,20 +27,24 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
   }, []);
 
   const toggleBiometrics = async (value: boolean) => {
-    setBiometricsEnabled(value);
-    await settingsService.setBiometricsEnabled(value);
-    
-    Alert.alert(
-      value ? 'Biometrics Enabled' : 'Biometrics Disabled',
-      value 
-        ? 'You can now use Face ID / Touch ID to unlock Hash Pass.' 
-        : 'You will now use PIN only to unlock Hash Pass.',
-    );
+    try {
+      setBiometricsEnabled(value);
+      await settingsService.setBiometricsEnabled(value);
+      
+      Alert.alert(
+        value ? 'Biometrics Enabled' : 'Biometrics Disabled',
+        value 
+          ? 'You can now use Face ID / Touch ID to unlock the app.' 
+          : 'Biometrics has been disabled. You will use PIN only.',
+      );
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'Failed to update setting.');
+    }
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Text style={styles.backText}>←</Text>
@@ -64,7 +67,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
           </View>
         </View>
 
-        {/* Biometric Lock - Functional Toggle */}
+        {/* Biometric Lock - Now Real */}
         <View style={styles.optionCard}>
           <View style={styles.optionLeft}>
             <View style={styles.optionIcon}>
@@ -85,7 +88,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
           />
         </View>
 
-        {/* Backup Keys */}
+        {/* Other options */}
         <TouchableOpacity style={styles.optionCard}>
           <View style={styles.optionLeft}>
             <View style={styles.optionIcon}>
@@ -93,13 +96,12 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
             </View>
             <View>
               <Text style={styles.optionTitle}>Backup keys</Text>
-              <Text style={styles.optionSubtitle}>Export recovery</Text>
+              <Text style={styles.optionSubtitle}>Export recovery phrase</Text>
             </View>
           </View>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
-        {/* Help & Support */}
         <TouchableOpacity style={styles.optionCard}>
           <View style={styles.optionLeft}>
             <View style={styles.optionIcon}>
@@ -112,9 +114,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
-        {/* Version */}
         <Text style={styles.version}>Version 1.0.0</Text>
-
       </ScrollView>
     </View>
   );

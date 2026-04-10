@@ -4,8 +4,8 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  ActivityIndicator,
-  Alert 
+  Animated,
+  Easing 
 } from 'react-native';
 import { bitcoinService } from '../services/bitcoinService';
 
@@ -16,40 +16,34 @@ interface SetupLoadingScreenProps {
 }
 
 export default function SetupLoadingScreen({ seedPhrase, pin, onComplete }: SetupLoadingScreenProps) {
-  const [progress, setProgress] = useState(0);
   const [stage, setStage] = useState<'loading' | 'success'>('loading');
+  const [progress] = useState(new Animated.Value(0));
 
   useEffect(() => {
     let isMounted = true;
 
     const startSetup = async () => {
       try {
-        // Encrypt during the loading phase
         await bitcoinService.saveEncryptedMnemonic(seedPhrase, pin);
-        console.log('✅ Seed phrase encrypted and saved during loading');
+        console.log('✅ Mnemonic encrypted and saved');
       } catch (error) {
         console.error('Encryption failed:', error);
-        if (isMounted) {
-          Alert.alert('Error', 'Failed to save your recovery phrase.');
-        }
       }
 
-      // Animate progress bar
-      const interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            if (isMounted) {
-              setStage('success');           // Show success message
-              setTimeout(() => {
-                if (isMounted) onComplete();
-              }, 1900); // Show success for 1.2 seconds
-            }
-            return 100;
-          }
-          return prev + 3.5;
-        });
-      }, 40);
+      // Smooth progress animation
+      Animated.timing(progress, {
+        toValue: 100,
+        duration: 1800,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: false,
+      }).start(() => {
+        if (isMounted) {
+          setStage('success');
+          setTimeout(() => {
+            if (isMounted) onComplete();
+          }, 1400);
+        }
+      });
     };
 
     startSetup();
@@ -57,7 +51,12 @@ export default function SetupLoadingScreen({ seedPhrase, pin, onComplete }: Setu
     return () => {
       isMounted = false;
     };
-  }, [seedPhrase, pin, onComplete]);
+  }, [seedPhrase, pin, onComplete, progress]);
+
+  const progressWidth = progress.interpolate({
+    inputRange: [0, 100],
+    outputRange: ['0%', '100%'],
+  });
 
   return (
     <View style={styles.container}>
@@ -65,30 +64,27 @@ export default function SetupLoadingScreen({ seedPhrase, pin, onComplete }: Setu
         {stage === 'loading' ? (
           <>
             <View style={styles.iconContainer}>
-              <Text style={styles.keyIcon}>🔑</Text>
+              <Text style={styles.icon}>🔑</Text>
             </View>
 
-            <Text style={styles.title}>Setting up</Text>
-            <Text style={styles.subtitle}>Creating your secure keychain</Text>
+            <Text style={styles.title}>Setting up your wallet</Text>
+            <Text style={styles.subtitle}>Encrypting your keys with military-grade security...</Text>
 
             <View style={styles.progressContainer}>
               <View style={styles.progressBarBackground}>
-                <View style={[styles.progressBar, { width: `${progress}%` }]} />
+                <Animated.View style={[styles.progressBar, { width: progressWidth }]} />
               </View>
             </View>
-
-            <ActivityIndicator size="small" color="#666666" style={styles.spinner} />
           </>
         ) : (
-          // Success Stage
           <>
             <View style={styles.successIconContainer}>
-              <Text style={styles.successIcon}>🎉</Text>
+              <Text style={styles.successIcon}>✅</Text>
             </View>
 
-            <Text style={styles.successTitle}>You're all set up!</Text>
+            <Text style={styles.successTitle}>Wallet Created Successfully!</Text>
             <Text style={styles.successSubtitle}>
-              Your Bitcoin-powered keychain is now ready.
+              Your Bitcoin-powered keychain is now ready and secure.
             </Text>
           </>
         )}
@@ -100,7 +96,7 @@ export default function SetupLoadingScreen({ seedPhrase, pin, onComplete }: Setu
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -110,36 +106,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   iconContainer: {
-    width: 78,
-    height: 78,
+    width: 90,
+    height: 90,
     backgroundColor: '#1a1a1a',
-    borderRadius: 22,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 32,
+    marginBottom: 40,
+    borderWidth: 2,
+    borderColor: '#f59e0b',
   },
-  keyIcon: {
-    fontSize: 38,
+  icon: {
+    fontSize: 42,
     color: '#ffffff',
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
     color: '#ffffff',
-    marginBottom: 8,
+    textAlign: 'center',
+    marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
     color: '#aaaaaa',
     textAlign: 'center',
+    lineHeight: 24,
     marginBottom: 60,
+    maxWidth: 300,
   },
   progressContainer: {
     width: '100%',
+    maxWidth: 280,
     marginBottom: 40,
   },
   progressBarBackground: {
-    height: 4,
+    height: 6,
     backgroundColor: '#222222',
     borderRadius: 999,
     overflow: 'hidden',
@@ -149,36 +151,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#f59e0b',
     borderRadius: 999,
   },
-  spinner: {
-    marginTop: 20,
-  },
 
-  // Success styles
+  // Success Stage
   successIconContainer: {
-    width: 96,
-    height: 96,
+    width: 110,
+    height: 110,
     backgroundColor: '#1a1a1a',
-    borderRadius: 48,
+    borderRadius: 55,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 32,
-    borderWidth: 3,
+    marginBottom: 40,
+    borderWidth: 4,
     borderColor: '#f59e0b',
   },
   successIcon: {
-    fontSize: 48,
+    fontSize: 52,
   },
   successTitle: {
     fontSize: 28,
     fontWeight: '700',
     color: '#ffffff',
-    marginBottom: 12,
     textAlign: 'center',
+    marginBottom: 12,
   },
   successSubtitle: {
     fontSize: 16,
     color: '#aaaaaa',
     textAlign: 'center',
     lineHeight: 24,
+    maxWidth: 280,
   },
 });
