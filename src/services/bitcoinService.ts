@@ -78,11 +78,18 @@ export const bitcoinService = {
   },
 
   async getAccountFingerprint(pin: string): Promise<string> {
-    const mnemonic = await this.getDecryptedMnemonic(pin);
-    const seed = await bip39.mnemonicToSeed(mnemonic);
-    const master = bip32.fromSeed(seed);
-    const fingerprint = Buffer.from(master.publicKey).toString('hex').slice(0, 16);
-    return fingerprint;
+    console.log('🔍 getAccountFingerprint called with PIN length:', pin.length);
+    try {
+      const mnemonic = await this.getDecryptedMnemonic(pin);
+      const seed = await bip39.mnemonicToSeed(mnemonic);
+      const master = bip32.fromSeed(seed);
+      const fingerprint = Buffer.from(master.publicKey).toString('hex').slice(0, 16);
+      console.log('🔍 GENERATED FINGERPRINT:', fingerprint);
+      return fingerprint;
+    } catch (error: any) {
+      console.log('❌ getAccountFingerprint failed:', error.message);
+      throw error;
+    }
   },
 
   async deriveKeys(mnemonic: string): Promise<DerivedKeys> {
@@ -200,6 +207,7 @@ export const sessionService = {
   async addSession(fingerprint: string, site: string, challenge: string, action: 'register' | 'login') {
     try {
       const key = getSessionsKey(fingerprint);
+      console.log(`🔍 SAVE - fingerprint: ${fingerprint} | key: ${key} | site: ${site}`);
       const sessions = await this.getSessions(fingerprint);
       
       const newSession = { 
@@ -222,16 +230,22 @@ export const sessionService = {
   async getSessions(fingerprint: string) {
     try {
       const key = getSessionsKey(fingerprint);
-      const data = await SecureStore.getItemAsync(key);
-      return data ? JSON.parse(data) : [];
-    } catch (error) {
-      console.error('Failed to load sessions:', error);
-      return [];
-    }
-  },
+      console.log(`🔍 LOAD - fingerprint: ${fingerprint} | key: ${key}`);
 
-  async clearAllSessions() {
-    console.log('Session clear called');
+      const data = await SecureStore.getItemAsync(key);
+      
+      if (!data) {
+        console.log(`🔍 LOAD - No data found for key: ${key}`);
+        return [];
+      }
+
+      const sessions = JSON.parse(data);
+      console.log(`🔍 LOAD RESULT - Found ${sessions.length} sessions for key ${key}`);
+      return sessions;
+    } catch (error: any) {
+      console.error('Failed to load sessions:', error?.message || error);
+      return [];           // ← yes, keep return [] at the end
+    }
   },
 };
 

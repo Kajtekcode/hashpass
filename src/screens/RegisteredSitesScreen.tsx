@@ -1,11 +1,11 @@
 // src/screens/RegisteredSitesScreen.tsx
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Pressable, 
-  ScrollView 
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { bitcoinService, sessionService } from '../services/bitcoinService';
@@ -13,28 +13,35 @@ import { bitcoinService, sessionService } from '../services/bitcoinService';
 interface RegisteredSitesScreenProps {
   onBack: () => void;
   currentPin: string;
+  refreshTrigger: number;
 }
 
-export default function RegisteredSitesScreen({ onBack, currentPin }: RegisteredSitesScreenProps) {
+export default function RegisteredSitesScreen({ 
+  onBack, 
+  currentPin, 
+  refreshTrigger 
+}: RegisteredSitesScreenProps) {
   const [registeredSites, setRegisteredSites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const isLoadingRef = useRef(false);
 
-  useEffect(() => {
-    loadRegisteredSites();
-  }, [currentPin]);
-
-  const loadRegisteredSites = async () => {
-    if (!currentPin) {
+  const loadRegisteredSites = useCallback(async () => {
+    if (!currentPin || currentPin.length !== 6) {
       setRegisteredSites([]);
       setLoading(false);
       return;
     }
 
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
+
+    console.log('🔄 RegisteredSitesScreen - load called');
+
     setLoading(true);
     try {
       const fingerprint = await bitcoinService.getAccountFingerprint(currentPin);
       const sessions = await sessionService.getSessions(fingerprint);
-      
+
       const uniqueSites = Array.from(
         new Map(
           sessions
@@ -44,13 +51,19 @@ export default function RegisteredSitesScreen({ onBack, currentPin }: Registered
       );
 
       setRegisteredSites(uniqueSites);
-    } catch (error) {
-      console.log('🔇 Registered sites load skipped (no valid PIN yet)');
+      console.log(`✅ RegisteredSitesScreen loaded ${uniqueSites.length} unique sites`);
+    } catch (error: any) {
+      console.log('❌ Registered sites load error:', error?.message || error);
       setRegisteredSites([]);
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
-  };
+  }, [currentPin]);
+
+  useEffect(() => {
+    loadRegisteredSites();
+  }, [loadRegisteredSites, refreshTrigger]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -61,9 +74,7 @@ export default function RegisteredSitesScreen({ onBack, currentPin }: Registered
         <Text style={styles.title}>Registered Sites</Text>
         <View style={{ width: 50 }} />
       </View>
-
       <Text style={styles.subtitle}>Sites where you have an account</Text>
-
       <ScrollView style={styles.scroll}>
         {loading ? (
           <Text style={styles.loading}>Loading registered sites...</Text>
@@ -93,64 +104,61 @@ export default function RegisteredSitesScreen({ onBack, currentPin }: Registered
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0a' },
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 20, 
-    paddingTop: 20 
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 20
   },
   backButton: { paddingVertical: 10 },
   backText: { color: '#f59e0b', fontSize: 17 },
   title: { fontSize: 20, fontWeight: '700', color: '#ffffff' },
-  subtitle: { 
-    fontSize: 15, 
-    color: '#aaaaaa', 
-    paddingHorizontal: 20, 
-    marginTop: 8, 
-    marginBottom: 20 
+  subtitle: {
+    fontSize: 15,
+    color: '#aaaaaa',
+    paddingHorizontal: 20,
+    marginTop: 8,
+    marginBottom: 20
   },
-
   scroll: { flex: 1 },
-  siteCard: { 
-    flexDirection: 'row', 
-    backgroundColor: '#161616', 
-    marginHorizontal: 20, 
-    marginBottom: 12, 
-    borderRadius: 18, 
-    padding: 18, 
-    alignItems: 'center' 
+  siteCard: {
+    flexDirection: 'row',
+    backgroundColor: '#161616',
+    marginHorizontal: 20,
+    marginBottom: 12,
+    borderRadius: 18,
+    padding: 18,
+    alignItems: 'center'
   },
-  siteIcon: { 
-    width: 52, 
-    height: 52, 
-    backgroundColor: '#222222', 
-    borderRadius: 14, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    marginRight: 16 
+  siteIcon: {
+    width: 52,
+    height: 52,
+    backgroundColor: '#222222',
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16
   },
   siteEmoji: { fontSize: 28 },
   siteInfo: { flex: 1 },
   siteName: { fontSize: 18, fontWeight: '600', color: '#ffffff' },
   siteDomain: { fontSize: 14, color: '#aaaaaa' },
-  statusDot: { 
-    width: 10, 
-    height: 10, 
-    backgroundColor: '#22c55e', 
-    borderRadius: 5 
+  statusDot: {
+    width: 10,
+    height: 10,
+    backgroundColor: '#22c55e',
+    borderRadius: 5
   },
-
-  empty: { 
-    alignItems: 'center', 
-    marginTop: 100 
+  empty: {
+    alignItems: 'center',
+    marginTop: 100
   },
   emptyText: { color: '#888888', fontSize: 18, marginBottom: 8 },
   emptySub: { color: '#666666', fontSize: 15, textAlign: 'center' },
-
-  loading: { 
-    color: '#888888', 
-    textAlign: 'center', 
-    marginTop: 100 
+  loading: {
+    color: '#888888',
+    textAlign: 'center',
+    marginTop: 100
   },
 });

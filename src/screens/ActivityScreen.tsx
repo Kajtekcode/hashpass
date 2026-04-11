@@ -1,35 +1,73 @@
 // src/screens/ActivityScreen.tsx
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Pressable, 
-  ScrollView, 
-  SafeAreaView 
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
 } from 'react-native';
-import { sessionService } from '../services/bitcoinService';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { bitcoinService, sessionService } from '../services/bitcoinService';
 
 interface ActivityScreenProps {
   onBack: () => void;
+  currentPin: string;
+  refreshTrigger: number;
 }
 
-export default function ActivityScreen({ onBack }: ActivityScreenProps) {
+export default function ActivityScreen({ 
+  onBack, 
+  currentPin, 
+  refreshTrigger 
+}: ActivityScreenProps) {
   const [activities, setActivities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const isLoadingRef = useRef(false);
+
+  const loadActivities = useCallback(async () => {
+    if (!currentPin || currentPin.length !== 6) {
+      setActivities([]);
+      setLoading(false);
+      return;
+    }
+
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
+
+    console.log('🔄 ActivityScreen - load called');
+
+    setLoading(true);
+    try {
+      const fingerprint = await bitcoinService.getAccountFingerprint(currentPin);
+      const sessions = await sessionService.getSessions(fingerprint);
+      setActivities(sessions || []);
+      console.log(`✅ ActivityScreen loaded ${sessions.length} sessions`);
+    } catch (error: any) {
+      console.log('❌ Activity load error:', error?.message || error);
+      setActivities([]);
+    } finally {
+      setLoading(false);
+      isLoadingRef.current = false;
+    }
+  }, [currentPin]);
 
   useEffect(() => {
     loadActivities();
-  }, []);
+  }, [loadActivities, refreshTrigger]);
 
-  const loadActivities = async () => {
-    const sessions = await sessionService.getSessions();
-    setActivities(sessions);
+  const formatDate = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
         <View style={styles.header}>
           <Pressable onPress={onBack} style={styles.backButton}>
             <Text style={styles.backText}>←</Text>
@@ -37,22 +75,21 @@ export default function ActivityScreen({ onBack }: ActivityScreenProps) {
           <Text style={styles.title}>Activity</Text>
         </View>
 
-        {activities.length > 0 ? (
+        {loading ? (
+          <Text style={styles.loadingText}>Loading activity...</Text>
+        ) : activities.length > 0 ? (
           activities.map((item, index) => (
             <View key={index} style={styles.activityCard}>
               <View style={styles.activityIcon}>
-                <Text style={styles.activityEmoji}>🔶</Text>
+                <Text style={styles.activityEmoji}>
+                  {item.action === 'register' ? '🔑' : '✅'}
+                </Text>
               </View>
               <View style={styles.activityInfo}>
-                <Text style={styles.activityName}>{item.site}</Text>
-                <Text style={styles.activityTime}>
-                  {new Date(item.timestamp).toLocaleString([], { 
-                    month: 'short', 
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                <Text style={styles.activityName}>
+                  {item.action === 'register' ? 'Registered on' : 'Logged into'} {item.site}
                 </Text>
+                <Text style={styles.activityTime}>{formatDate(item.timestamp)}</Text>
               </View>
               <View style={styles.greenDot} />
             </View>
@@ -60,6 +97,7 @@ export default function ActivityScreen({ onBack }: ActivityScreenProps) {
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No activity yet</Text>
+            <Text style={styles.emptySubtext}>Your actions will appear here</Text>
           </View>
         )}
       </ScrollView>
@@ -98,4 +136,6 @@ const styles = StyleSheet.create({
   greenDot: { width: 10, height: 10, backgroundColor: '#22c55e', borderRadius: 5 },
   emptyState: { alignItems: 'center', paddingTop: 100 },
   emptyText: { color: '#888888', fontSize: 16 },
+  emptySubtext: { color: '#666666', fontSize: 14, textAlign: 'center' },
+  loadingText: { color: '#888888', textAlign: 'center', padding: 30 },
 });
